@@ -1,11 +1,22 @@
+import java.util.ArrayList;
+import java.util.List;
+
 public class Token {
     String name = "A";
     int [][] shape;
+    List<int[][]> rotations;
     int GRID_SIZE = 7;
 
     public Token(String name, int [][] shape){
         this.name = name;
         this.shape = shape;
+
+        // for future optimization, test each token in every orientation individually
+        rotations = new ArrayList<>();
+        rotations.add(getShape());
+        rotations.add(rotate(90));
+        rotations.add(rotate(180));
+        rotations.add(rotate(270));
     }
 
     public String getName(){
@@ -45,7 +56,6 @@ public class Token {
 
     @Override
     public String toString() {
-
         return name;
     }
 }

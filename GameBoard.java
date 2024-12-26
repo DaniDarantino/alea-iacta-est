@@ -1,13 +1,14 @@
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 public class GameBoard {
 
-    Cell[][] gameBoard;
-    boolean exactMatch = true;
+    Cell<Integer,String>[][] gameBoard;
+    // whether to search for an exact match for the given dices (currently not working since algorithm is too slow)
+    public boolean exactMatch = true; 
     int GRID_SIZE = 7;
+
     Cell<Integer, String> element0 = new Cell<Integer,String>(0, "");
     Cell<Integer, String> element1 = new Cell<Integer,String>(1, "");
     Cell<Integer, String> element2 = new Cell<Integer,String>(2, "");
@@ -19,7 +20,7 @@ public class GameBoard {
 
     public GameBoard() {
         // initiallize game board with default values
-        // every element is not occupied
+        // every cell is empty and not occupied by a token
         gameBoard = new Cell[][]{
             {element0,element5,element4,element1,element3,element2,element6},
             {element6,element4,element0,element5,element2,element1,element3},
@@ -32,25 +33,34 @@ public class GameBoard {
     }
 
     // custom toString function used to print the game board to the console
-    // when an cell is occupied, the name of the object occupying it is printed, otherwise, the dice value is printed or 0 in case of an empty cell
+    // when an cell is occupied, the name of the token occupying it is printed, otherwise, the dice value is printed or 0 in case of an empty cell
     @Override
     public String toString() {
         StringBuilder str = new StringBuilder(100);
         for(int i=0; i<gameBoard.length; i++) {
-            str.append("\n");
+            
+            if(i==0){
+                str.append("   ||      0:    1:    2:    3:    4:    5:    6:   \n");
+                str.append("---------------------------------------------------\n");
+                str.append("---------------------------------------------------\n");
+            }
+            str.append(i+": ||\t|");
             for(int j=0; j<gameBoard[i].length; j++) {
                 Cell<Integer,String> currElement = gameBoard[i][j];
                 // if the current cell is occupied (it is not equal to "") write down the tile that this cell is occupied by
                 if(currElement.getTokenStr() != ""){
-                    str.append(currElement.getTokenStr() + "\t");
+                    str.append("  "+currElement.getTokenStr() + "  |");
                 } else {
-                    str.append(+currElement.getValue()+"\t");
+                    str.append("  "+currElement.getValue()+"  |");
                 }
             }
+            str.append("\n");
+            str.append("\t-------------------------------------------\n");
         }
         return str.toString();
     }
 
+    // test if a token can be placed at the given location in the given orientation 
     private boolean canPlaceToken(int startRow, int startCol, Token token, int rotation) {
         int[][] rotatedShape = token.rotate(rotation);
 
@@ -68,10 +78,10 @@ public class GameBoard {
                 return false;
             }
         }
-
         return true;
     }
 
+    // actually place the token if it is possible
     public boolean placeToken(int startRow, int startCol, Token token, int rotation) {
         if(canPlaceToken(startRow, startCol, token, rotation)){
             int[][] rotatedShape = token.rotate(rotation);
@@ -86,7 +96,7 @@ public class GameBoard {
                         col = startCol + cell[i];
                     }
                 }
-                System.out.println("row: "+row+" column: "+col);
+                //System.out.println("row: "+row+" column: "+col);
                 Cell<Integer,String> cc = gameBoard[row][col];
                 gameBoard[row][col] = new Cell<Integer,String>(cc.getValue(), token.getName());
             }
@@ -95,11 +105,22 @@ public class GameBoard {
             //System.out.println("CANNOT place token: " + token.getName()+ " at location "+startRow+","+startCol);
             return false;
         }
+    }
+    
+    public void removeToken(int startRow, int startCol, Token token) {
+            //System.out.println("row: "+row+" column: "+col);
 
+        for (int[] cell : token.getShape()) {
+            int row = startRow + cell[0];
+            int col = startCol + cell[1];
+            Cell<Integer,String> cc = gameBoard[row][col];
+            gameBoard[row][col] = new Cell<Integer,String>(cc.getValue(), "");
+        }
     }
 
-    public boolean isSolved(List<Integer> diceRolls) {        
-
+    // check if the current board state is a valid solution
+    public boolean isSolved(List<Integer> diceRolls) {
+        
         List<Integer> winingNumbers = diceRolls;
         // we always need to have an empty field left (indicated by 0) which we add to the dice rolls
         winingNumbers.add(0);
@@ -139,10 +160,9 @@ public class GameBoard {
                 if(i==0) emptyCells++;
             }
             if(emptyCells==1){
-                System.out.println("Found match for dices: "+emptyNumbers.toString());
+                System.out.println("\nFound match for dices: "+emptyNumbers.toString());
                 return true;
             } else {
-                System.out.println("No valid config");
                 return false;
             }
         }
