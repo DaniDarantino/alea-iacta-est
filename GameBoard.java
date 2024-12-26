@@ -1,8 +1,12 @@
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 public class GameBoard {
 
     Cell[][] gameBoard;
+    boolean exactMatch = true;
     int GRID_SIZE = 7;
     Cell<Integer, String> element0 = new Cell<Integer,String>(0, "");
     Cell<Integer, String> element1 = new Cell<Integer,String>(1, "");
@@ -72,7 +76,7 @@ public class GameBoard {
         if(canPlaceToken(startRow, startCol, token, rotation)){
             int[][] rotatedShape = token.rotate(rotation);
             for(int[] cell : rotatedShape){
-                System.out.println(Arrays.toString(cell));
+                //System.out.println(Arrays.toString(cell));
                 int row = 0;
                 int col = 0;
                 for(int i = 0; i < cell.length; i++){
@@ -88,9 +92,59 @@ public class GameBoard {
             }
             return true;
         } else {
-            System.out.println("CANNOT place token: " + token.getName()+ " at location "+startRow+","+startCol);
+            //System.out.println("CANNOT place token: " + token.getName()+ " at location "+startRow+","+startCol);
             return false;
         }
 
+    }
+
+    public boolean isSolved(List<Integer> diceRolls) {        
+
+        List<Integer> winingNumbers = diceRolls;
+        // we always need to have an empty field left (indicated by 0) which we add to the dice rolls
+        winingNumbers.add(0);
+        // Count empty cells
+        int emptyCount = 0;
+        for (Cell[] row : gameBoard) {
+            for (Cell cell : row) {
+                if (cell.getTokenStr() == "") {
+                    emptyCount++;
+                }
+            }
+        }
+        // Check if empty cells match dice rolls
+        if (emptyCount != 7) {
+            return false;
+        }
+        List<Integer> emptyNumbers = new ArrayList<>();
+
+        for (int i = 0; i < GRID_SIZE; i++) {
+            for (int j = 0; j < GRID_SIZE; j++) {
+                // check if current cell is not occupied
+                if (gameBoard[i][j].getTokenStr() == "") {
+                    emptyNumbers.add((int) gameBoard[i][j].getValue());
+                }
+            }
+        }
+
+        // Compare empty cell numbers with winning numbers (dice rolls plus empty cell (0))
+        if(exactMatch){
+            Collections.sort(emptyNumbers);
+            Collections.sort(winingNumbers);
+            return winingNumbers.equals(emptyNumbers);
+        } else {
+            // for now, just check if i have 7 empty cells with one cell having value 0
+            int emptyCells = 0;
+            for (Integer i : emptyNumbers) {
+                if(i==0) emptyCells++;
+            }
+            if(emptyCells==1){
+                System.out.println("Found match for dices: "+emptyNumbers.toString());
+                return true;
+            } else {
+                System.out.println("No valid config");
+                return false;
+            }
+        }
     }
 }
