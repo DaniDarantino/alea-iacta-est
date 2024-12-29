@@ -5,7 +5,7 @@ import java.util.List;
 public class GameBoard {
 
     Cell<Integer,String>[][] gameBoard;
-    // whether to search for an exact match for the given dices (currently not working since algorithm is too slow)
+    // whether to search for an exact match for the given dices or stop after any valid token placement was found
     public boolean exactMatch = true; 
     int GRID_SIZE = 7;
 
@@ -60,11 +60,9 @@ public class GameBoard {
         return str.toString();
     }
 
-    // test if a token can be placed at the given location in the given orientation 
-    private boolean canPlaceToken(int startRow, int startCol, Token token, int rotation) {
-        int[][] rotatedShape = token.rotate(rotation);
+    public boolean canPlaceToken(int startRow, int startCol, int[][] tokenShape) {
 
-        for (int[] cell : rotatedShape) {
+        for (int[] cell : tokenShape) {
             int row = startRow + cell[0];
             int col = startCol + cell[1];
 
@@ -81,36 +79,28 @@ public class GameBoard {
         return true;
     }
 
-    // actually place the token if it is possible
-    public boolean placeToken(int startRow, int startCol, Token token, int rotation) {
-        if(canPlaceToken(startRow, startCol, token, rotation)){
-            int[][] rotatedShape = token.rotate(rotation);
-            for(int[] cell : rotatedShape){
-                //System.out.println(Arrays.toString(cell));
-                int row = 0;
-                int col = 0;
-                for(int i = 0; i < cell.length; i++){
-                    if(i == 0){
-                        row = startRow + cell[i];
-                    }else{
-                        col = startCol + cell[i];
-                    }
+    public void placeToken(int startRow, int startCol, int[][] tokenShape, String tokenName) {
+        for(int[] cell : tokenShape){
+
+            int row = 0;
+            int col = 0;
+            for(int i = 0; i < cell.length; i++){
+                if(i == 0){
+                    row = startRow + cell[i];
+                }else{
+                    col = startCol + cell[i];
                 }
-                //System.out.println("row: "+row+" column: "+col);
-                Cell<Integer,String> cc = gameBoard[row][col];
-                gameBoard[row][col] = new Cell<Integer,String>(cc.getValue(), token.getName());
             }
-            return true;
-        } else {
-            //System.out.println("CANNOT place token: " + token.getName()+ " at location "+startRow+","+startCol);
-            return false;
+            //System.out.println("row: "+row+" column: "+col);
+            Cell<Integer,String> cc = gameBoard[row][col];
+            gameBoard[row][col] = new Cell<Integer,String>(cc.getValue(), tokenName);
         }
     }
     
-    public void removeToken(int startRow, int startCol, Token token) {
+    public void removeToken(int startRow, int startCol, int[][] tokenShape) {
             //System.out.println("row: "+row+" column: "+col);
 
-        for (int[] cell : token.getShape()) {
+        for (int[] cell : tokenShape) {
             int row = startRow + cell[0];
             int col = startCol + cell[1];
             Cell<Integer,String> cc = gameBoard[row][col];
@@ -118,27 +108,9 @@ public class GameBoard {
         }
     }
 
-    // check if the current board state is a valid solution
-    public boolean isSolved(List<Integer> diceRolls) {
-        
-        List<Integer> winingNumbers = diceRolls;
-        // we always need to have an empty field left (indicated by 0) which we add to the dice rolls
-        winingNumbers.add(0);
-        // Count empty cells
-        int emptyCount = 0;
-        for (Cell[] row : gameBoard) {
-            for (Cell cell : row) {
-                if (cell.getTokenStr() == "") {
-                    emptyCount++;
-                }
-            }
-        }
-        // Check if empty cells match dice rolls
-        if (emptyCount != 7) {
-            return false;
-        }
-        List<Integer> emptyNumbers = new ArrayList<>();
+    public boolean isSolutionStillPossible(List<Integer> winingNumbers){
 
+        List<Integer> emptyNumbers = new ArrayList<>();
         for (int i = 0; i < GRID_SIZE; i++) {
             for (int j = 0; j < GRID_SIZE; j++) {
                 // check if current cell is not occupied
@@ -147,11 +119,31 @@ public class GameBoard {
                 }
             }
         }
+        if(emptyNumbers.containsAll(winingNumbers)){
+            return true;
+        } else {
+            return false;
+        }
+    }
+    // check if the current board state is a valid solution
+    public boolean isSolved(List<Integer> winingNumbers) {
+
+        List<Integer> emptyNumbers = new ArrayList<>();
+
+        for (int i = 0; i < GRID_SIZE; i++) {
+            for (int j = 0; j < GRID_SIZE; j++) {
+                // check if current cell is not occupied
+                if (gameBoard[i][j].getTokenStr() == "") {
+                    emptyNumbers.add((Integer) gameBoard[i][j].getValue());
+                }
+            }
+        }
 
         // Compare empty cell numbers with winning numbers (dice rolls plus empty cell (0))
         if(exactMatch){
             Collections.sort(emptyNumbers);
             Collections.sort(winingNumbers);
+
             return winingNumbers.equals(emptyNumbers);
         } else {
             // for now, just check if i have 7 empty cells with one cell having value 0
